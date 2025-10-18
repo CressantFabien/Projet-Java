@@ -16,10 +16,10 @@ class Node{
     // Getters
     public Operation getNodeoperation() {return nodeoperation;}
     public double getDistance() {return distance;} 
-    public Node getNodePredecessor() {return nextnode;}
+    public Node getNodePredecessor() {return nodepredecessor;}
 
     //setters
     public void setNodeoperation(Operation nodeoperation) { this.nodeoperation = nodeoperation; }
     public void setDistance(double distance) { this.distance = distance;}
-    public void setNodePredecessor(Node nextnode) { this.nextnode = nextnode;}
+    public void setNodePredecessor(Node nextnode) { this.nodepredecessor = nextnode;}
 }

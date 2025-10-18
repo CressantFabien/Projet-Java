@@ -9,7 +9,7 @@ public class Batch implements Cloneable {
     private Machine associatedmachine;
 
     //constructor
-    public Batch(int idbatch, liste<Operation> operationlist, double starttime, Machine associatedmachine) {
+    public Batch(int idbatch, List<Operation> operationlist, double starttime, Machine associatedmachine) {
         this.idbatch = idbatch;
         this.operationlist = operationlist;
         this.starttime = starttime;
@@ -22,10 +22,10 @@ public class Batch implements Cloneable {
     public void setIdbatch(int idbatch) {
         this.idbatch = idbatch;
     }
-    public liste<Operation> getOperationlist() {
+    public List<Operation> getOperationlist() {
         return operationlist;
     }
-    public void setOperationlist(liste<Operation> operationlist) {
+    public void setOperationlist(List<Operation> operationlist) {
         this.operationlist = operationlist;
     }
     public double getStarttime() {

@@ -8,7 +8,7 @@ public class Lot {
     private int wafercount;
     private List<Operation> operations;
 
-    public Lot(int idlot, int priority, double earlieststartdate, int wafercount, list<Operation> operations) {
+    public Lot(int idlot, int priority, double earlieststartdate, int wafercount, List<Operation> operations) {
         this.idlot = idlot;
         this.priority = priority;
         this.earlieststartdate = earlieststartdate;

@@ -1,5 +1,5 @@
 package model;
-import java.util.Objects;
+import java.util.*;
 
 public class Machine {
     private int idmachine;
@@ -33,7 +33,7 @@ public class Machine {
     public void setInterbatchtime(double interbatchtime) { this.interbatchtime = interbatchtime;}
     public void setInitialsetuptime(double initialsetuptime) { this.initialsetuptime = initialsetuptime;}
 
-    public boolean equals(Objetc o){
+    public boolean equals(Object o){
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Machine machine = (Machine) o;
