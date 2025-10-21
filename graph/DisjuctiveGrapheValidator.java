@@ -3,14 +3,14 @@ package graph;
 import java.util.*;
 import model.*;
 
-public class DisjuctuveGrapheValidator {
+public class DisjuctiveGrapheValidator {
    private List<Arc> BaseConjArcs;
    private Map<Operation, Node> operationNodeMap;
    private Node node_0;
    private List<Node> nodes;
    private Map<Batch, Node> tempBatchNodeMap;
 
-   public DisjuctuveGrapheValidator(List<Lot> alllots){
+   public DisjuctiveGrapheValidator(List<Lot> alllots){
          this.BaseConjArcs = new ArrayList<>();
          this.operationNodeMap = new HashMap<>();
          this.nodes = new ArrayList<>();
