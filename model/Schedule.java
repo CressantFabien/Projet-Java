@@ -36,4 +36,5 @@ public class Schedule implements Cloneable {
             throw new AssertionError(); // Can't happen
         }
     }
+
 }   
