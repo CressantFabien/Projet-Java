@@ -109,7 +109,10 @@ public class SimulatedAnnealingSolver {
 
         double fmov = 0;
         double fbatch = 0;
+        double fbatchSum = 0.0;
         double fxfactor = 0;
+        double fxfactorSum = 0.0;
+
         double T = schedule.getTimehorizon();
 
         Map<Machine, List<Batch>> machineMap = schedule.getMachinetobatchmap();
@@ -130,7 +133,7 @@ public class SimulatedAnnealingSolver {
                 double p = op.getDuration();
                 if(t <= T){ //condition sur teta
                     if(t + p <= T) {teta = 1;}
-                    else{ teta = (T-t)/p}
+                    else{ teta = (T-t)/p; }
                 }
                 //Calcul de la somme
                 fmov += teta * (op.getAssociatedlot().getWafercount());
@@ -138,34 +141,87 @@ public class SimulatedAnnealingSolver {
          }
 
         //Calcul de fbatch
+        int batchCountStartedBeforeT = 0; // Dénominateur |B^T|
+        for (Batch batch : allBatches) {
+            // Est-ce que le batch démarre avant l'horizon T?
+            if (batch.getStarttime() < T) { 
+                batchCountStartedBeforeT++;
+                Machine machine = batch.getAssociatedmachine();
+                int Rk = machine.getCapacity(); // Capacité machine
+                
+                // Zk: Nombre de recettes qualifiées. A METTRE A JOUR si tu l'ajoutes à Machine
+                double Zk = 1.0; // Placeholder, car Zk manque dans ta classe Machine
+                
+                // Taille du batch = nombre d'opérations
+                int batchSize = batch.getOperationlist().size(); 
+                
+                // Somme du numérateur
+                if (Rk + (Zk / 100.0) > 0) { // Éviter division par zéro
+                     fbatchSum += batchSize / (Rk + (Zk / 100.0));
+                }
+            }
+        }
 
+        // Calcul final de fbatch (attention à la division par zéro)
+        if (batchCountStartedBeforeT > 0) {
+        fbatch = fbatchSum / batchCountStartedBeforeT;
+         }
 
         //Calcul de fxfactor
-        Map<Lot, Double> R; //liste des dates de libération de chaque lots
-
-
-        int Jt = 0;
+        int completedLotCount = 0; // Dénominateur |J^T|
+    
+        // On itère sur tous les LOTS uniques du schedule
+        Set<Lot> allLotsInSchedule = new HashSet<>();
         for (Batch batch : allBatches) {
-            if (batch.getOperationlist().isEmpty()) {
-                 continue;
-            }
-            double t = batch.getStarttime();
             for (Operation op : batch.getOperationlist()) {
-                double p = op.getDuration();
-                int c = op.getAssociatedlot().getPriority();
-
-                //Vérification si il est dans Jt :
-                if(t + p <= T) {
-                    //Calcul de la somme
-                    fxfactor += c * (t + p - r) / p;
-                    Jt ++;
-                }
-                   
-            } 
+                allLotsInSchedule.add(op.getAssociatedlot());
+            }
         }
-        fxfactor /= Jt;
-     
+        for (Lot lot : allLotsInSchedule) {
+            List<Operation> lotOps = lot.getOperations();
+            if (lotOps.isEmpty()) continue; // Skip les lots sans opérations
+    
+            // Trouver la DERNIÈRE opération du lot
+            Operation lastOp = lotOps.get(lotOps.size() - 1);
+            
+            // Trouver le Batch qui contient cette dernière opération
+            Batch batchContainingLastOp = null;
+            for (Batch b : allBatches) {
+                if (b.getOperationlist().contains(lastOp)) {
+                    batchContainingLastOp = b;
+                    break;
+                }
+            }
+    
+            // Si la dernière op n'est pas dans le schedule, le lot n'est pas complété
+            if (batchContainingLastOp == null) continue;
+    
+            // Récupérer les infos nécessaires pour la formule
+            double t_last = batchContainingLastOp.getStarttime(); // t_in_i
+            double p_last = lastOp.getDuration(); // p_in_i
+            double completionTime = t_last + p_last; // Fin de la dernière opération
+    
+            // Vérifier si le LOT est COMPLÉTÉ avant T [cite: 218]
+            if (completionTime <= T) {
+                completedLotCount++; // Incrémenter le dénominateur
+                
+                int c = lot.getPriority(); // c_i
+                double r = lot.getEarlieststartdate(); // r_i
+    
+                // Calculer la partie de la somme pour ce lot
+                if (p_last > 0) { // Éviter division par zéro
+                    fxfactorSum += c * (completionTime - r) / p_last;
+                }
+            }
+        }
+    
+        // Calcul final de fxfactor (attention à la division par zéro)
+        if (completedLotCount > 0) {
+            fxfactor = fxfactorSum / completedLotCount;
+        }
 
+
+        //Calcul final
         return alpha * fmov + beta * fbatch - gamma * fxfactor;
     }
 }
