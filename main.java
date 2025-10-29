@@ -1,40 +1,52 @@
-import graph.*;
-import model.*;
-
 import java.util.*;
+import model.*;
+import graph.*;
+import solver.*;
 
-public class Main {
+public class main {
+
     public static void main(String[] args) {
-        // Création de quelques objets factices pour tester la compilation
-        Recipe recipe1 = new Recipe("R1");
+        System.out.println("--- DÉBUT DU TEST SIMPLE ---");
 
-        // Création de lots et opérations
+        // --- 1. Données Minimalistes ---
+        Recipe recipeA = new Recipe("R_A");
+        Machine machine1 = new Machine(1, 2, 1.0, 1.0, 1.0, 0.0);
+        Lot lot1 = new Lot(101, 1, 0.0, 1, new ArrayList<>());
+        Operation op1 = new Operation(1, 5.0, 0.0, Double.POSITIVE_INFINITY, recipeA, lot1);
+        lot1.setOperations(Collections.singletonList(op1));
 
-        Lot lot1 = new Lot(1, 1, 0.0, 10, new ArrayList<>()); //idlot,priority,earlieststartdate,wafercount, operations
-        Lot lot2 = new Lot(2, 2, 5.0, 20, new ArrayList<>());
+        List<Lot> allLots = Collections.singletonList(lot1);
 
-        Operation op1 = new Operation(1, 3.0, 1.0, 5.0, recipe1, lot1); //idoperation, duration, mindelayafter,maxdelayafter, recipe, associatedlot
-        Operation op2 = new Operation(2, 2.0, 0.5, 4.0, recipe1, lot1);
-        Operation op3 = new Operation(3, 1.5, 0.5, 3.0, recipe1, lot2);
+        // --- 2. Schedule Initial Très Simple ---
+        Batch batch1 = new Batch(1, Collections.singletonList(op1), 0.0, machine1);
 
-        // Ajouter les opérations aux lots
-        lot1.setOperations(Arrays.asList(op1, op2));
-        lot2.setOperations(Collections.singletonList(op3));
+        Map<Machine, List<Batch>> scheduleMap = new HashMap<>();
+        scheduleMap.put(machine1, new ArrayList<>(Collections.singletonList(batch1)));
 
-        // Créer une liste de lots
-        List<Lot> allLots = Arrays.asList(lot1, lot2);
+        Schedule initialSchedule = new Schedule(0.0, 100.0, scheduleMap, false);
 
-        // Instancier le validateur de graphe
-        DisjuctuveGrapheValidator validator = new DisjuctuveGrapheValidator(allLots);
+        // --- 3. Initialiser les Outils ---
+        DisjuctiveGrapheValidator validator = new DisjuctiveGrapheValidator(allLots);
+        SimulatedAnnealingSolver solver = new SimulatedAnnealingSolver(
+            validator,
+            100.0,  // Température initiale
+            0.95,   // Taux de refroidissement
+            1000    // Nombre d'itérations
+        );
 
-        System.out.println("Disjunctive Graph Validator créé avec succès !");
+        // --- 4. Lancer le Solver ---
+        System.out.println("Lancement du solver...");
+        Schedule finalSchedule = solver.solve(initialSchedule);
 
-        // Optionnel : créer un schedule factice pour tester la méthode (vide pour l'instant)
-        Map<Machine, List<Batch>> machineToBatch = new HashMap<>();
-        Schedule schedule = new Schedule(0.0, 10.0, machineToBatch, true);
-
-        // Ici on pourrait appeler la méthode de validation (même si elle n'est pas encore implémentée)
-        // boolean result = validator.validateschedule(schedule);
-        // System.out.println("Résultat de validation : " + result);
+        // --- 5. Afficher le Résultat ---
+        System.out.println("-------------------------");
+        System.out.println("TEST SIMPLE TERMINÉ.");
+        if (finalSchedule != null) {
+            System.out.println("Score final : " + finalSchedule.getF());
+            System.out.println("Planning final faisable : " + finalSchedule.isFeasible());
+        } else {
+            System.out.println("Le solver n'a pas retourné de solution.");
+        }
+        System.out.println("-------------------------");
     }
 }
