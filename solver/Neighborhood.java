@@ -42,7 +42,7 @@ public class Neighborhood {
                 machines.add(m);
             }
         }
-        if (machines.size() < 2) {
+        if (machines.size() < 1) {
             return; // Pas assez de machines avec des batches
         }
         // Sélectionner une machine source aléatoire, ses batches, et un batch à déplacer et le retirer
@@ -64,72 +64,97 @@ public class Neighborhood {
         batchToMove.setAssociatedmachine(targetMachine);
     }
 
-private void applyOperationMove(Schedule schedule) {
-    // Recuperer tous les batches
-    Map<Machine, List<Batch>> machineMap = schedule.getMachinetobatchmap();
-    List<Batch> allBatches = new ArrayList<>();
-    for (List<Batch> batchList : machineMap.values()) {
-        allBatches.addAll(batchList);
-    }
-    if (allBatches.isEmpty()) return; // Rien à faire
-
-    //Choisir un Batch A au hasard (qui a plus d'une op)
-    List<Batch> candidateBatchesA = new ArrayList<>();
-    for (Batch batch : allBatches) {
-        if (batch.getOperationlist().size() > 1) {
-            candidateBatchesA.add(batch);
+    private void applyOperationMove(Schedule schedule) {
+        // Recuperer tous les batches
+        Map<Machine, List<Batch>> machineMap = schedule.getMachinetobatchmap();
+        List<Batch> allBatches = new ArrayList<>();
+        for (List<Batch> batchList : machineMap.values()) {
+            allBatches.addAll(batchList);
         }
-    }
-    // S'il n'y a pas de batch avec > 1 op, on ne peut pas faire ce mouvement
-    if (candidateBatchesA.isEmpty()) return; 
-
-    Batch batchA = candidateBatchesA.get(rand.nextInt(candidateBatchesA.size()));
+        if (allBatches.isEmpty()) return; // Rien à faire
     
-    //Retirer une Opération de ce Batch
-    List<Operation> operationsA = batchA.getOperationlist();
-    int opIndex = rand.nextInt(operationsA.size());
-    Operation operationToMove = operationsA.remove(opIndex);
-    Recipe recipeToMatch = operationToMove.getRecipe();
-    Lot lotToMove = operationToMove.getAssociatedlot();
-
-    // Trouver un autre Batch B au hasard qui est "compatible"
-    List<Batch> candidateBatchesB = new ArrayList<>();
-    for (Batch batch : allBatches) {
-        if (batch == batchA) continue;
-        if (batch.getOperationlist().isEmpty()) {
-            candidateBatchesB.add(batch);
-            continue;
-        }
-
-        if (batch.getOperationlist().get(0).getRecipe().equals(recipeToMatch)) {
-            Set<Lot> lotsInBatch = new HashSet<>();
-            for (Operation op : batch.getOperationlist()) {
-                lotsInBatch.add(op.getAssociatedlot());
+        //Choisir un Batch A au hasard (qui a plus d'une op)
+        List<Batch> candidateBatchesA = new ArrayList<>();
+        for (Batch batch : allBatches) {
+            if (batch.getOperationlist().size() > 1) {
+                candidateBatchesA.add(batch);
             }
-            lotsInBatch.add(lotToMove);
-
-            if (lotsInBatch.size() <= batch.getAssociatedmachine().getCapacity()) {
+        }
+        // S'il n'y a pas de batch avec > 1 op, on ne peut pas faire ce mouvement
+        if (candidateBatchesA.isEmpty()) return; 
+    
+        Batch batchA = candidateBatchesA.get(rand.nextInt(candidateBatchesA.size()));
+        
+        //Retirer une Opération de ce Batch
+        List<Operation> operationsA = batchA.getOperationlist();
+        int opIndex = rand.nextInt(operationsA.size()); // Index pour la ré-insertion si besoin
+        Operation operationToMove = operationsA.remove(opIndex);
+        Recipe recipeToMatch = operationToMove.getRecipe();
+        Lot lotToMove = operationToMove.getAssociatedlot();
+    
+        // Trouver un autre Batch B au hasard qui est "compatible"
+        List<Batch> candidateBatchesB = new ArrayList<>();
+        for (Batch batch : allBatches) {
+            if (batch == batchA) continue;
+            
+            // Cas 1: Le batch est vide, il est toujours compatible
+            if (batch.getOperationlist().isEmpty()) {
                 candidateBatchesB.add(batch);
+                continue;
+            }
+    
+            // Cas 2: Le batch n'est pas vide
+            // Vérifier la recette
+            if (batch.getOperationlist().get(0).getRecipe().equals(recipeToMatch)) {
+                // Vérifier la capacité de la machine
+                Set<Lot> lotsInBatch = new HashSet<>();
+                for (Operation op : batch.getOperationlist()) {
+                    lotsInBatch.add(op.getAssociatedlot());
+                }
+                lotsInBatch.add(lotToMove); // Ajoute le lot de l'op qu'on veut déplacer
+    
+                if (lotsInBatch.size() <= batch.getAssociatedmachine().getCapacity()) {
+                    candidateBatchesB.add(batch);
+                }
             }
         }
+    
+        //Ajouter l'Opération O au Batch B (si on en a trouvé un)
+        if (candidateBatchesB.size() > 0) {
+            Batch batchB = candidateBatchesB.get(rand.nextInt(candidateBatchesB.size()));
+            batchB.getOperationlist().add(operationToMove);
+        }
+        //Sinon, créer un nouveau Batch
+        else {
+            // --- CORRECTION APPLIQUÉE ---
+            // L'objectif est de placer le nouveau batch sur n'importe quelle machine,
+            // pas seulement la machine d'origine.
+    
+            // 1. Récupérer TOUTES les machines disponibles
+            List<Machine> allMachines = new ArrayList<>(machineMap.keySet());
+    
+            // 2. Vérification de sécurité (devrait être impossible si batchA existe)
+            if (allMachines.isEmpty()) { 
+                operationsA.add(opIndex, operationToMove); // Annuler : remettre l'op
+                return;
+            }
+    
+            // 3. Choisir une machine cible AU HASARD
+            Machine machineForNewBatch = allMachines.get(rand.nextInt(allMachines.size()));
+            // --- FIN DE LA CORRECTION ---
+    
+            // Créer le nouveau batch avec l'opération
+            List<Operation> newBatchOps = new ArrayList<>();
+            newBatchOps.add(operationToMove);
+            
+            // Assumer que votre constructeur Batch(id, ops, start, machine)
+            // associe bien l'opération et la machine
+            Batch newBatch = new Batch(-1, newBatchOps, 0.0, machineForNewBatch); 
+            
+            // Ajouter ce nouveau batch à la liste de la machine cible (aléatoire)
+            machineMap.get(machineForNewBatch).add(newBatch);
+        }
     }
-
-    //Ajouter l'Opération O au Batch B (si on en a trouvé un)
-    if (candidateBatchesB.size() > 0) {
-        Batch batchB = candidateBatchesB.get(rand.nextInt(candidateBatchesB.size()));
-        batchB.getOperationlist().add(operationToMove);
-    }
-    //Sinon, créer un nouveau Batch
-    else {
-        Machine machineForNewBatch = batchA.getAssociatedmachine();
-        List<Operation> newBatchOps = new ArrayList<>();
-        newBatchOps.add(operationToMove);
-        
-        Batch newBatch = new Batch(-1, newBatchOps, 0.0, machineForNewBatch);
-        
-        machineMap.get(machineForNewBatch).add(newBatch);
-    }
-}
     
 
     private void applyOperationSwitch(Schedule schedule) {

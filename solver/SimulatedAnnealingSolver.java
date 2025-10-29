@@ -31,57 +31,64 @@ public class SimulatedAnnealingSolver {
 
     public Schedule solve(Schedule initialSchedule) {
         System.out.println("LOG: Lancement de l'optimisation par Recuit Simulé...");
-
-        // 1. Valider la solution initiale (pour avoir son score 'f')
-        validator.validateSchedule(initialSchedule);
-        if (!initialSchedule.isFeasible()) {
+    
+        // 1. Valider la solution initiale
+        boolean initialFeasible = validator.validateSchedule(initialSchedule); // Renommé pour clarté
+        if (!initialFeasible) {
             System.err.println("ERREUR: La solution initiale n'est pas faisable !");
-            return initialSchedule; // Ou gérer l'erreur autrement
+            return initialSchedule;
         }
-
+    
+        // ===>>> APPEL MANQUANT 1 : Calculer le score initial <<<===
+        initialSchedule.setF(calculateObjective(initialSchedule));
+        System.out.println("Score initial : " + initialSchedule.getF()); // Pour vérifier
+    
         Schedule currentSchedule = initialSchedule;
-        Schedule bestSchedule = initialSchedule.clone(); // Garder une copie de la meilleure
+        Schedule bestSchedule = initialSchedule.clone();
         double currentTemperature = this.initialTemperature;
-
+    
         // 2. La grande boucle d'optimisation
         for (int i = 0; i < this.maxIterations; i++) {
-
+    
             // a) Générer un voisin
             Schedule neighborSchedule = neighborhood.generateRandomNeighbor(currentSchedule);
-
+    
             // b) Valider le voisin
             boolean neighborIsFeasible = validator.validateSchedule(neighborSchedule);
-
+    
             // c) Décider si on accepte le voisin
             if (neighborIsFeasible) {
+    
+                // ===>>> APPEL MANQUANT 2 : Calculer le score du voisin <<<===
+                neighborSchedule.setF(calculateObjective(neighborSchedule));
+    
                 // Calculer la différence de score (delta f)
-                // On utilise TES getters pour 'f'
                 double currentScore = currentSchedule.getF();
                 double neighborScore = neighborSchedule.getF();
                 double delta = neighborScore - currentScore;
-
+    
                 // Appliquer le critère d'acceptation
                 if (accept(delta, currentTemperature)) {
-                    currentSchedule = neighborSchedule; // On accepte le voisin comme nouvelle base
-
+                    currentSchedule = neighborSchedule;
+    
                     // Si ce voisin est le meilleur trouvé jusqu'à présent...
                     if (currentSchedule.getF() > bestSchedule.getF()) {
-                        bestSchedule = currentSchedule.clone(); // ...on le sauvegarde
+                        bestSchedule = currentSchedule.clone();
                         System.out.println("    -> Nouvelle meilleure solution trouvée (Score: " + bestSchedule.getF() + ") à l'itération " + i);
                     }
                 }
             }
-            // (Si le voisin n'est pas faisable, on ne fait rien, on continue)
-
+            // (Si le voisin n'est pas faisable, on l'ignore)
+    
             // d) Refroidir la température
             currentTemperature *= this.coolingRate;
-
+    
             // Afficher la progression (optionnel)
-            if (i % 1000 == 0) {
-                System.out.println("Itération " + i + " / " + maxIterations + " | Temp: " + currentTemperature + " | Score actuel: " + currentSchedule.getF());
+            if (i > 0 && i % (maxIterations / 10) == 0) { // Afficher tous les 10%
+                 System.out.println("Itération " + i + " / " + maxIterations + " | Temp: " + String.format("%.2f", currentTemperature) + " | Score actuel: " + String.format("%.2f", currentSchedule.getF()) + " | Meilleur: " + String.format("%.2f", bestSchedule.getF()));
             }
         }
-
+    
         System.out.println("LOG: Optimisation terminée.");
         System.out.println("Meilleur score final trouvé : " + bestSchedule.getF());
         return bestSchedule;
@@ -103,9 +110,9 @@ public class SimulatedAnnealingSolver {
     }
 
     private double calculateObjective(Schedule schedule){
-        double alpha = 601;
-        double beta = 1500001;
-        double gamma = 41;
+        double alpha = 1; // au lieu de 601
+        double beta = 200; // au lieu de 1500001
+        double gamma = 10; // au lieu de 41
 
         double fmov = 0;
         double fbatch = 0;
@@ -219,6 +226,7 @@ public class SimulatedAnnealingSolver {
         if (completedLotCount > 0) {
             fxfactor = fxfactorSum / completedLotCount;
         }
+
 
 
         //Calcul final

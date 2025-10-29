@@ -81,7 +81,6 @@ public class DisjuctiveGrapheValidator {
 }
 // ASSISTANT 1 : Réinitialise les distances des nœuds avant chaque validation   
   private void resetNodeDistances() {
-      System.out.println("LOG: Réinitialisation des distances des nœuds...");
       for (Node node : this.nodes) {
           if (node == this.node_0) {
               node.setDistance(0.0); // Le nœud 0 est toujours à 0
@@ -94,7 +93,6 @@ public class DisjuctiveGrapheValidator {
   
 // ASSISTANT 2 : Construit les arcs dynamiques (Batch et Séquencement)
   private List<Arc> buildDynamicNodesAndArcs(Schedule scheduleToTest) {
-      System.out.println("LOG: Construction des arcs dynamiques...");
       List<Arc> dynamicArcs = new ArrayList<>();
       
       // Map temporaire pour les nœuds fictifs de batch de CE schedule
@@ -148,7 +146,6 @@ public class DisjuctiveGrapheValidator {
   
   //ASSISTANT 3 : Exécute l'algorithme de Bellman-Ford.
   private boolean runBellmanFord(List<Arc> dynamicArcs) {
-    System.out.println("LOG: Lancement de Bellman-Ford...");
 
     // 1. Créer la liste complète de tous les arcs (statiques + dynamiques)
     List<Arc> allArcs = new ArrayList<>(this.BaseConjArcs);
@@ -205,20 +202,16 @@ public class DisjuctiveGrapheValidator {
         // Si on peut ENCORE relaxer un arc, cela veut dire qu'il y a un
         // cycle de poids positif. Le planning est impossible !
         if (u.getDistance() + weight > v.getDistance()) {
-            System.err.println("ERREUR: Cycle positif détecté! Schedule infaisable.");
-            System.err.println("       Arc problématique: de " + u + " à " + v);
             return false; // INFAISABLE
         }
     }
 
     // Si on arrive ici, aucun cycle positif n'a été trouvé.
-    System.out.println("LOG: Bellman-Ford terminé. Schedule faisable.");
     return true; // FAISABLE
 }
   
   //ASSISTANT 4 : Met à jour les 'startTime' dans les objets Batch.
   private void updateScheduleStartTimes(Schedule scheduleToTest) {
-      System.out.println("LOG: Mise à jour des dates de début...");
       for (List<Batch> batchList : scheduleToTest.getMachinetobatchmap().values()) {
           for (Batch batch : batchList) {
               Operation op = batch.getOperationlist().get(0);
@@ -230,7 +223,6 @@ public class DisjuctiveGrapheValidator {
   }
 //ASSISTANT 5 : Nettoie les nœuds dynamiques après validation
   private void cleanupDynamicNodes() {
-    System.out.println("LOG: Nettoyage des nœuds de batch temporaires...");
     this.nodes.removeAll(this.tempBatchNodeMap.values());
     this.tempBatchNodeMap.clear();
 }
